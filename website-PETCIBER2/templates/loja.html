@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Loja - PETCIBER{% endblock %}
+
+{% block content %}
+<h2 class="mb-4 text-center">🌿 Linha Baltic Pets</h2>
+<p class="text-center">
+  Use o cupom <strong>BALTIC10</strong> e ganhe 10% OFF.
+</p>
+
+<div class="product-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px;">
+
+  {% set produtos = [
+    {"nome": "BiotaPet 250 g", "preco": "97.71", "imagem": "biotapet.jpeg"},
+    {"nome": "ShinePet 250 g", "preco": "88.81", "imagem": "shinepet.jpeg"},
+    {"nome": "DefensePet 250 g", "preco": "92.81", "imagem": "defensepet.jpeg"},
+    {"nome": "SereniPet 250 g", "preco": "106.15", "imagem": "serenipet.jpeg"},
+    {"nome": "JointPet 250 g", "preco": "120.80", "imagem": "jointpet.jpeg"},
+    {"nome": "ArticPet 40 g", "preco": "88.48", "imagem": "articpet.jpeg"}
+  ] %}
+
+  {% for produto in produtos %}
+  <div style="background:#f5efe6; padding:16px; border-radius:14px; text-align:center; box-shadow:0 6px 18px rgba(0,0,0,0.06);">
+    <img src="{{ url_for('static', filename='img/produtos/' ~ produto.imagem) }}"
+     alt="{{ produto.nome }}"
+     style="max-width:100%; height:150px; object-fit:contain; border-radius:8px;">
+    <div style="margin-top:10px; font-weight:600;">{{ produto.nome }}</div>
+    <div style="color:#0a8a46; font-weight:700; margin-top:5px;">R$ {{ produto.preco }}</div>
+    <div style="margin-top:10px;">
+      <input type="number" min="1" value="1" style="width:60px; text-align:center; border-radius:6px; border:1px solid #ddd; padding:5px;">
+      <input type="text" value="BALTIC10" readonly style="width:80px; text-align:center; border:none; background:#f0f0f0; border-radius:6px;">
+      <button style="background:#8d4b2e; color:#fff; border:none; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer;">Comprar</button>
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

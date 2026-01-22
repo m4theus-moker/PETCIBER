@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Carrinho - PETCIBER{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-3">🛒 Meu Carrinho</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if carrinho and carrinho|length > 0 %}
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center">
+            <thead class="table-light">
+                <tr>
+                    <th>Produto</th>
+                    <th>Preço unit.</th>
+                    <th>Qtd</th>
+                    <th>Subtotal</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in carrinho %}
+                <tr>
+                    <td class="d-flex align-items-center gap-2">
+                        <img src="{{ url_for('static', filename='img/produtos/' ~ item.img) }}" 
+                             style="width:60px;height:60px;object-fit:cover;border-radius:6px;">
+                        {{ item.name }}
+                    </td>
+                    <td>R$ {{ '%.2f'|format(item.price) }}</td>
+                    <td>{{ item.qty }}</td>
+                    <td>R$ {{ '%.2f'|format(item.price * item.qty) }}</td>
+                    <td>
+                        <a href="{{ url_for('remover_carrinho', sku=item.sku) }}" class="btn btn-sm btn-danger">Remover</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <h5>Total: R$ {{ '%.2f'|format(total) }}</h5>
+        <div>
+            <a href="{{ url_for('limpar_carrinho') }}" class="btn btn-outline-warning">Limpar Carrinho</a>
+            <a href="{{ url_for('finalizar_compra') }}" class="btn btn-success">Finalizar Compra</a>
+        </div>
+    </div>
+
+    {% else %}
+        <p class="text-muted">Seu carrinho está vazio.</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Voltar à loja</a>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Checkout - PETCIBER{% endblock %}
+{% block content %}
+<div class="container my-5" style="max-width:780px">
+  <h3 class="mb-1">Finalizar assinatura</h3>
+  <p class="text-muted">Plano selecionado:
+    <b>{{ 'Mensal' if plano == 'mensal' else 'Anual' }}</b> —
+    <span class="text-success">R$ {{ '29,00' if plano == 'mensal' else '299,00' }}</span>
+  </p>
+
+  <form method="post" class="card shadow-sm p-4">
+    <div class="mb-3">
+      <label class="form-label">Nome completo</label>
+      <input required name="nome" class="form-control">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">E-mail</label>
+      <input required name="email" type="email" class="form-control">
+    </div>
+
+    <label class="form-label">Forma de pagamento</label>
+    <div class="list-group mb-3">
+      <label class="list-group-item">
+        <input class="form-check-input me-2" type="radio" name="pgto" value="credito" checked>
+        Cartão de crédito
+      </label>
+      <label class="list-group-item">
+        <input class="form-check-input me-2" type="radio" name="pgto" value="debito">
+        Cartão de débito
+      </label>
+      <label class="list-group-item">
+        <input class="form-check-input me-2" type="radio" name="pgto" value="pix">
+        PIX
+      </label>
+    </div>
+
+    <!-- Campos de cartão (exibição simples; mostre só se crédito/débito for selecionado) -->
+    <div id="cartao-fields" class="row g-2 mb-3">
+      <div class="col-md-8">
+        <input class="form-control" placeholder="Número do cartão">
+      </div>
+      <div class="col-md-2">
+        <input class="form-control" placeholder="Validade">
+      </div>
+      <div class="col-md-2">
+        <input class="form-control" placeholder="CVV">
+      </div>
+    </div>
+
+    <!-- PIX (exibição simples) -->
+    <div id="pix-box" class="alert alert-success d-none">
+      <b>PIX:</b> abra o app do seu banco e pague para a chave:
+      <code>financeiro@petciber.com.br</code>
+      <div class="small text-muted mt-1">Após o pagamento, confirme clicando em “Concluir pagamento”.</div>
+    </div>
+
+    <button class="btn btn-primary">Concluir pagamento</button>
+  </form>
+
+  <div class="text-center small text-muted mt-3">
+    Pagamento 100% seguro • Sem fidelidade • 7 dias de garantia
+  </div>
+</div>
+
+<script>
+  // alterna campos de pagamento
+  const radios = document.querySelectorAll('input[name="pgto"]');
+  const cartao = document.getElementById('cartao-fields');
+  const pix    = document.getElementById('pix-box');
+  function togglePgto(){
+    const val = document.querySelector('input[name="pgto"]:checked').value;
+    if(val === 'pix'){ cartao.classList.add('d-none'); pix.classList.remove('d-none'); }
+    else{ pix.classList.add('d-none'); cartao.classList.remove('d-none'); }
+  }
+  radios.forEach(r => r.addEventListener('change', togglePgto));
+  togglePgto();
+</script>
+{% endblock %}

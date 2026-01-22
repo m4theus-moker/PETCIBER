@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Painel - PETCIBER{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <!-- ====== HEADER ====== -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-success mb-0">🐾 Painel PETCIBER</h2>
+    <a href="{{ url_for('ver_carrinho') }}" class="btn btn-outline-primary">
+      🛒 Ver Carrinho ({{ session.get('carrinho', [])|length }})
+    </a>
+  </div>
+
+  <div class="alert alert-primary text-center">
+    👋 Olá, <b>{{ nome_tutor.split(' ')[0] if nome_tutor else 'Tutor' }}</b>! Bem-vindo(a) ao seu painel.
+  </div>
+
+  <!-- ====== PETS ====== -->
+  {% if pets and pets|length > 0 %}
+    <div class="row">
+      {% for p in pets %}
+      <div class="col-md-6">
+        <div class="card mb-3 shadow-sm">
+
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+              {% if p.foto %}
+                <img src="{{ url_for('static', filename='uploads/' ~ p.foto) }}"
+                     alt="{{ p.nome }}" style="width:80px;height:80px;border-radius:12px;object-fit:cover;">
+              {% else %}
+                <img src="{{ url_for('static', filename='img/pet-fallback.png') }}"
+                     alt="Sem foto" style="width:80px;height:80px;border-radius:12px;object-fit:cover;">
+              {% endif %}
+              <div><b>🐶 {{ p.nome }}</b> — <span class="text-muted">{{ p.raca or '—' }}</span></div>
+            </div>
+            <span class="badge text-bg-light">ID #{{ p.id }}</span>
+          </div>
+
+          <div class="card-body text-center">
+            <div class="row">
+              <div class="col-12 col-lg-6 mb-3 mb-lg-0 text-start">
+                <h6 class="text-info mb-2">📊 Dados Vitais</h6>
+                <p class="mb-1">💓 Batimentos: <b>{{ p.bpm or '—' }} bpm</b></p>
+                <p class="mb-1">🌡️ Temp. corporal: <b>{{ p.temp_corporal or '—' }} °C</b></p>
+                <p class="mb-1">🌤️ Temp. ambiente: <b>{{ p.temp_ambiente or '—' }} °C</b></p>
+                <p class="mb-0">🧠 Estado emocional: <b>{{ p.estado_emocional or '—' }}</b></p>
+              </div>
+
+              <div class="col-12 col-lg-6 text-start">
+                <h6 class="text-warning mb-2">🚨 Alertas</h6>
+                {% if p.alertas %}
+                  <ul class="mb-0">
+                    {% for a in p.alertas %}<li>{{ a }}</li>{% endfor %}
+                  </ul>
+                {% else %}
+                  <p class="text-success mb-0">Tudo parece normal com o pet.</p>
+                {% endif %}
+              </div>
+            </div>
+            <hr>
+            <h6 class="text-secondary">📚 Histórico</h6>
+            <p class="mb-0">{{ p.historico or "Nenhum histórico registrado ainda." }}</p>
+          </div>
+
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-warning">
+      Você ainda não cadastrou um pet.
+      <a class="alert-link" href="{{ url_for('cadastrar_pet') }}">Cadastrar agora</a>.
+    </div>
+  {% endif %}
+
+  <!-- ====== ATALHOS ====== -->
+  <div class="row g-2 mb-4">
+    <div class="col-md-3"><a href="{{ url_for('agenda') }}" class="btn btn-outline-primary w-100">📅 Agenda Inteligente</a></div>
+    <div class="col-md-3"><a href="{{ url_for('chatbot') }}" class="btn btn-outline-success w-100">🤖 Chatbot PETCIBOT</a></div>
+    <div class="col-md-3"><a href="{{ url_for('radar') }}" class="btn btn-outline-dark w-100">🗺️ Radar de Passeio</a></div>
+    <div class="col-md-3"><a href="{{ url_for('checklist') }}" class="btn btn-outline-warning w-100">🧳 Checklist Personalizado</a></div>
+  </div>
+
+  <!-- ====== LOJA BALTIC ====== -->
+  <section id="loja-baltic" class="mb-5">
+    <div class="card shadow-sm rounded-3">
+      <div class="card-header d-flex justify-content-between align-items-center" style="background:#f7faf9;">
+        <div>
+          <h5 class="mb-0">🌿 Linha Baltic Pets</h5>
+          <small class="text-muted">
+            Use o cupom <b>{{ cupom.code if cupom else 'PETCIBER10' }}</b> e ganhe {{ cupom.percent if cupom else '10' }}% OFF.
+          </small>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="row g-3">
+
+          {% set produtos = [
+            {'sku':'ARTICPET', 'name':'ArticPet - Saúde Articular', 'price':99.90, 'img':'articpet.jpeg'},
+            {'sku':'BIOTAPET', 'name':'BiotaPet - Flora Intestinal', 'price':89.90, 'img':'biotapet.jpeg'},
+            {'sku':'DEFENSEPET', 'name':'DefensePet - Imunidade', 'price':94.90, 'img':'defensepet.jpeg'},
+            {'sku':'JOINTPET', 'name':'JointPet - Mobilidade e Ossos', 'price':109.90, 'img':'jointpet.jpeg'},
+            {'sku':'SERENIPET', 'name':'SereniPet - Calmante Natural', 'price':84.90, 'img':'serenipet.jpeg'},
+            {'sku':'SHINEPET', 'name':'ShinePet - Pelos e Pele', 'price':92.90, 'img':'shinepet.jpeg'}
+          ] %}
+
+          {% for prod in produtos %}
+          <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+            <div class="border rounded-3 h-100 p-2 shadow-sm text-center">
+              <div style="aspect-ratio:1/1;background:#fff;border-radius:10px;overflow:hidden;">
+                <img src="{{ url_for('static', filename='img/produtos/' ~ prod.img) }}" alt="{{ prod.name }}" class="img-fluid">
+              </div>
+              <div class="pt-2">
+                <div class="fw-bold text-truncate">{{ prod.name }}</div>
+                <div class="text-success fs-5 fw-bold">R$ {{ '%.2f'|format(prod.price) }}</div>
+                <form action="{{ url_for('adicionar_carrinho') }}" method="post" class="d-flex gap-2 justify-content-center mt-2">
+                  <input type="hidden" name="sku" value="{{ prod.sku }}">
+                  <input type="hidden" name="nome" value="{{ prod.name }}">
+                  <input type="hidden" name="price" value="{{ prod.price }}">
+                  <input type="hidden" name="img" value="{{ prod.img }}">
+                  <input type="number" name="qty" value="1" min="1" class="form-control" style="max-width:80px;" required>
+                  <button class="btn btn-sm" style="background:#8b5a2b;color:#fff;">Adicionar</button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

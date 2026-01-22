@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Cadastrar Pet - PETCIBER{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:720px">
+  <h3 class="mb-3 text-success">🐾 Cadastrar Pet</h3>
+
+  <!-- FORMULÁRIO DE CADASTRO -->
+  <form method="post" enctype="multipart/form-data" class="p-3 border rounded shadow-sm bg-light">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label">Nome</label>
+        <input name="nome" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Raça</label>
+        <select name="raca" class="form-select" required>
+          <option value="">Selecione a raça</option>
+          {% for r in racas %}
+            <option value="{{ r }}">{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Foto do Pet (opcional)</label>
+        <input type="file" name="foto" class="form-control" accept="image/*">
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <label class="form-label">Histórico (opcional)</label>
+      <textarea name="historico" class="form-control" rows="3"></textarea>
+    </div>
+
+    <div class="text-end mt-3">
+      <button class="btn btn-success">💾 Salvar Pet</button>
+    </div>
+  </form>
+
+  <hr class="my-4">
+
+  <!-- LISTAGEM DE PETS -->
+  <h4 class="mb-3">🐕 Meus Pets</h4>
+
+  {% if pets and pets|length > 0 %}
+    <div class="row">
+      {% for pet in pets %}
+      <div class="col-md-6 mb-3">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body text-center">
+            {% if pet.foto %}
+              <img src="{{ url_for('static', filename='uploads/' ~ pet.foto) }}"
+                   alt="{{ pet.nome }}"
+                   class="img-fluid rounded-circle mb-2"
+                   style="width:100px;height:100px;object-fit:cover;">
+            {% else %}
+              <img src="{{ url_for('static', filename='img/pet-fallback.png') }}"
+                   alt="Sem foto"
+                   class="img-fluid rounded-circle mb-2"
+                   style="width:100px;height:100px;object-fit:cover;">
+            {% endif %}
+            <h6 class="fw-bold mb-1">{{ pet.nome }}</h6>
+            <p class="text-muted mb-1">{{ pet.raca or 'Raça não informada' }}</p>
+            {% if pet.historico %}
+              <p class="small text-secondary">{{ pet.historico }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted text-center">Nenhum pet cadastrado ainda. 🐾</p>
+  {% endif %}
+</div>
+{% endblock %}

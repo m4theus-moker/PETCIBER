@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:880px;margin:0 auto;">
+  <h2>Finalizar compra</h2>
+  <div class="card" style="background:#fff;border-radius:14px;box-shadow:0 8px 18px rgba(0,0,0,.08);padding:16px;">
+    <div style="display:grid;grid-template-columns:160px 1fr;gap:16px;">
+      <img src="/{{ prod.img }}" alt="{{ prod.name }}" style="width:160px;height:160px;object-fit:contain;">
+      <div>
+        <div style="font-weight:700;font-size:18px;">{{ prod.name }}</div>
+        <div>Quantidade: <b>{{ qty }}</b></div>
+        <div>Preço unit.: <b>R$ {{ '%.2f'|format(prod.price) }}</b></div>
+        <div>Subtotal: <b>R$ {{ '%.2f'|format(subtotal) }}</b></div>
+        <div>Desconto ({{ cupom.code }}): <b style="color:#16a34a;">- R$ {{ '%.2f'|format(discount) }}</b></div>
+        <div style="font-size:20px;margin-top:8px;">Total: <b>R$ {{ '%.2f'|format(total) }}</b></div>
+      </div>
+    </div>
+
+    <hr style="margin:16px 0;">
+    <form method="post" style="display:grid;gap:12px;">
+      <label style="font-weight:700;">Forma de pagamento</label>
+      <label><input type="radio" name="payment_method" value="credito"> Cartão de crédito</label>
+      <label><input type="radio" name="payment_method" value="debito"> Cartão de débito</label>
+      <label><input type="radio" name="payment_method" value="pix"> PIX (gera QR na confirmação)</label>
+
+      <button class="btn" style="background:#8b5a2b;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;width:200px;">
+        Pagar agora
+      </button>
+      <p style="color:#64748b;margin:0;">Comprando agora com <b>{{ cupom.code }}</b> você ainda ganha
+         <b>desconto no plano mensal/anual no próximo mês</b> (bônus ativado automaticamente).
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}

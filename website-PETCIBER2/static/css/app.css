@@ -1,0 +1,17 @@
+/* static/css/app.css */
+
+/* Cards dos pets */
+.card {
+    border-radius: 12px;
+    box-shadow: 0 6px 14px rgba(0,0,0,.08);
+}
+
+/* Botões */
+.btn {
+    border-radius: 8px;
+}
+
+/* Fotos do pet */
+.img-fluid {
+    object-fit: cover;
+}

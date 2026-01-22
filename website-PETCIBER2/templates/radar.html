@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+{% block title %}Radar de Passeio - PETCIBER{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+  #mapa {
+    height: 500px;
+    border-radius: 15px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    margin-bottom: 20px;
+  }
+  .leaflet-popup-content-wrapper {
+    background-color: #fffdf6;
+    border-radius: 10px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  /* Logo dentro do mapa */
+  .leaflet-petciber-logo {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    background: #fff; padding: 4px; margin: 10px;
+  }
+  /* Cartão do sensor */
+  .sensor-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0,0,0,.08);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .badge-sig {
+    display: inline-flex; align-items:center; gap:.5rem;
+    border-radius: 999px; padding: .25rem .75rem; font-weight: 600;
+  }
+  .sig-verde   { background:#e8f7ee; color:#117a47; }
+  .sig-amarelo { background:#fff7e6; color:#a86800; }
+  .sig-vermelho{ background:#feeceb; color:#a7362c; }
+  .muted { color:#777; }
+</style>
+
+<div class="container mt-4">
+  <div class="text-center mb-3">
+    <!-- Logo no topo (fallback seguro) -->
+    <img
+      src="{{ (brand.logo_url if brand is defined else url_for('static', filename='brand/logo.png')) }}"
+      alt="Logo PETCIBER"
+      width="100"
+    >
+    <h2 class="text-success mt-2">🐾 Radar de Passeio</h2>
+    <p class="text-muted mb-0">Descubra os melhores locais para passear com seu pet agora!</p>
+  </div>
+
+  <!-- SENSOR DE ASFALTO -->
+  <div class="sensor-card">
+    <form id="sensor-form" class="row gy-2 gx-3 align-items-end">
+      <div class="col-sm-3">
+        <label class="form-label">Temperatura do ar (°C)</label>
+        <input type="number" step="0.1" min="-10" max="60" id="air_c" class="form-control" placeholder="ex.: 27.5">
+        <div class="form-text">Preenchemos automaticamente se possível.</div>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label d-block">Exposição</label>
+        <div class="btn-group" role="group">
+          <input type="radio" class="btn-check" name="sun" id="sun_sol" value="sol" checked>
+          <label class="btn btn-outline-dark" for="sun_sol">Sol</label>
+          <input type="radio" class="btn-check" name="sun" id="sun_sombra" value="sombra">
+          <label class="btn btn-outline-dark" for="sun_sombra">Sombra</label>
+        </div>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label">Raça (opcional)</label>
+        <input id="breed" class="form-control" placeholder="Ex.: Bulldog Francês">
+      </div>
+      <div class="col-sm-3 d-grid">
+        <button class="btn btn-success" type="submit">Calcular agora</button>
+      </div>
+    </form>
+
+    <div id="sensor-result" class="mt-3" style="display:none">
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+        <span id="sig-badge" class="badge-sig">—</span>
+        <div>
+          <div><b>Asfalto estimado:</b> <span id="asfalto">—</span> °C</div>
+          <small class="muted">Leitura: <span id="timestamp">—</span></small>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="p-3 rounded border">
+            <div class="fw-semibold mb-1">Conduta</div>
+            <div id="conduta">—</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 rounded border">
+            <div class="fw-semibold mb-1">Melhor lugar agora</div>
+            <div id="best_place">—</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 rounded border">
+            <div class="fw-semibold mb-1">Dica de ração</div>
+            <div id="racao">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPA -->
+  <div id="mapa"></div>
+
+  <div class="alert alert-success text-center" id="melhor-local" style="display:none"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  // ---------- MAPA ----------
+  const mapa = L.map('mapa').setView([-23.5505, -46.6333], 13);
+  const hora = new Date().getHours();
+  const tile = (hora >= 18 || hora < 6)
+    ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  L.tileLayer(tile, { attribution: '&copy; OpenStreetMap contributors' }).addTo(mapa);
+
+  // Ícone do pet
+  const petIcon = L.icon({
+    iconUrl: "{{ url_for('static', filename='dog-icon.png') }}",
+    iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -30]
+  });
+
+  // Locais fictícios (exemplo)
+  const zonas = [
+    { nome: "Praça Pet Friendly 🐕", lat: -23.551, lon: -46.634 },
+    { nome: "Parque Central 🐩",    lat: -23.553, lon: -46.630 },
+    { nome: "Lago Pet Feliz 🦴",    lat: -23.548, lon: -46.632 }
+  ];
+  zonas.forEach(z => {
+    z.temperatura = Math.floor(Math.random() * 10) + 25;
+    z.ruido       = Math.floor(Math.random() * 50) + 20;
+    const cor = (z.temperatura > 33 || z.ruido > 60) ? 'red' : 'green';
+    L.marker([z.lat, z.lon], { icon: petIcon }).addTo(mapa)
+      .bindPopup(`<b>${z.nome}</b><br>🌡️ Temperatura: ${z.temperatura}°C<br>🔉 Ruído: ${z.ruido} dB`);
+    L.circle([z.lat, z.lon], { color: cor, fillOpacity: 0.3, radius: 120 }).addTo(mapa);
+  });
+
+  // Controle com LOGO no canto superior esquerdo do mapa
+  (function() {
+    const LogoControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd: function () {
+        const img = L.DomUtil.create('img', 'leaflet-petciber-logo');
+        img.src   = "{{ (brand.logo_url if brand is defined else url_for('static', filename='brand/logo.png')) }}";
+        img.alt   = "PETCIBER"; img.title = "PETCIBER";
+        L.DomEvent.disableClickPropagation(img);
+        return img;
+      }
+    });
+    mapa.addControl(new LogoControl());
+  })();
+
+  // ---------- SENSOR DE ASFALTO ----------
+  const elAir      = document.getElementById('air_c');
+  const elResult   = document.getElementById('sensor-result');
+  const elBadge    = document.getElementById('sig-badge');
+  const elAsfalto  = document.getElementById('asfalto');
+  const elConduta  = document.getElementById('conduta');
+  const elBest     = document.getElementById('best_place');
+  const elRacao    = document.getElementById('racao');
+  const elStamp    = document.getElementById('timestamp');
+  const elBreed    = document.getElementById('breed');
+  let   userCircle = null;
+
+  function racaoParaRaca(b) {
+    if (!b) return "Ração premium de manutenção.";
+    const s = b.toLowerCase();
+    if (s.includes('bulldog') || s.includes('pug')) return "Ração pele sensível e controle de peso (ômega 3/6).";
+    if (s.includes('shih'))                           return "Ração para pelagem longa.";
+    if (s.includes('labrador'))                       return "Ração controle de peso e articulações.";
+    if (s.includes('poodle'))                         return "Ração para raças pequenas.";
+    return "Ração premium de manutenção.";
+  }
+
+  function calcAsfalto(airC, sol) {
+    const delta = sol ? 14 : 6;
+    const a = +(airC + delta).toFixed(1);
+    if (a <= 45) return { a, sig:'verde',   cond:'Passeio liberado (prefira sombra).', place:'Parque arborizado' };
+    if (a <= 52) return { a, sig:'amarelo', cond:'Passeio curto em grama/sombra. Evite horários de pico.', place:'Praça com grama' };
+    return           { a, sig:'vermelho', cond:'Evite sair agora. Opte por atividades indoor.', place:'Ambiente interno' };
+  }
+
+  function badge(sig) {
+    elBadge.classList.remove('sig-verde','sig-amarelo','sig-vermelho');
+    if (sig === 'verde')   { elBadge.classList.add('sig-verde');   elBadge.textContent = 'Sinal VERDE'; }
+    else if (sig === 'amarelo') { elBadge.classList.add('sig-amarelo'); elBadge.textContent = 'Sinal AMARELO'; }
+    else { elBadge.classList.add('sig-vermelho'); elBadge.textContent = 'Sinal VERMELHO'; }
+  }
+
+  function cor(sig) {
+    if (sig === 'verde') return '#1fa97a';
+    if (sig === 'amarelo') return '#f0a500';
+    return '#e55353';
+  }
+
+  let lastLat = -23.5505, lastLon = -46.6333;
+
+  function aplicarResultado(obj) {
+    badge(obj.sig);
+    elAsfalto.textContent = obj.a.toFixed(1);
+    elConduta.textContent = obj.cond;
+    elBest.textContent    = obj.place;
+    elRacao.textContent   = racaoParaRaca(elBreed.value || '');
+    elStamp.textContent   = new Date().toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
+    elResult.style.display = 'block';
+
+    // círculo colorido junto do usuário
+    if (userCircle) { mapa.removeLayer(userCircle); }
+    userCircle = L.circle([lastLat, lastLon], { color: cor(obj.sig), fillOpacity: .2, radius: 150 }).addTo(mapa);
+  }
+
+  document.getElementById('sensor-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const air = parseFloat(elAir.value);
+    if (isNaN(air)) { alert('Informe a temperatura do ar.'); return; }
+    const sol = document.getElementById('sun_sol').checked;
+    aplicarResultado(calcAsfalto(air, sol));
+  });
+
+  // Recomendação simples (pré-existente)
+  function recomendarPasseio(lat, lon) {
+    const recomendadas = zonas
+      .filter(z => z.temperatura <= 33 && z.ruido <= 60)
+      .map(z => ({ ...z, distancia: Math.sqrt((lat - z.lat)**2 + (lon - z.lon)**2) }));
+    recomendadas.sort((a,b) => a.distancia - b.distancia);
+    if (recomendadas.length) {
+      const m = recomendadas[0];
+      const link = `https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lon}`;
+      const div = document.getElementById("melhor-local");
+      div.innerHTML = `🐶 Melhor local para passeio:<br><b>${m.nome}</b><br>🌡️ ${m.temperatura}°C &nbsp; 🔉 ${m.ruido} dB<br>
+        📍 <a class="btn btn-outline-primary btn-sm mt-2" target="_blank" href="${link}">Abrir no Google Maps</a>`;
+      div.style.display = "block";
+    }
+  }
+
+  // Geolocalização + temperatura em tempo real (Open-Meteo)
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      lastLat = pos.coords.latitude;
+      lastLon = pos.coords.longitude;
+
+      L.marker([lastLat, lastLon], { icon: petIcon })
+        .addTo(mapa)
+        .bindPopup("📍 Você está aqui com seu pet!")
+        .openPopup();
+      mapa.setView([lastLat, lastLon], 15);
+
+      // Busca temperatura atual sem chave (Open-Meteo)
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lastLat}&longitude=${lastLon}&current_weather=true`;
+        const r = await fetch(url);
+        const j = await r.json();
+        if (j?.current_weather?.temperature !== undefined) {
+          elAir.value = j.current_weather.temperature.toFixed(1);
+          aplicarResultado(calcAsfalto(parseFloat(elAir.value), true)); // sol por padrão
+        }
+      } catch(e) { /* silencioso */ }
+
+      recomendarPasseio(lastLat, lastLon);
+    }, (err) => {
+      console.warn('Geolocalização indisponível:', err?.message);
+    }, { enableHighAccuracy: true });
+  }
+
+  // ---------- PARQUES DE SÃO PAULO (Overpass/OSM) ----------
+  const parksLayer = L.layerGroup().addTo(mapa);
+  L.control.layers(null, { "Parques de SP": parksLayer }, { collapsed: true }).addTo(mapa);
+
+  async function loadSaoPauloParks() {
+    const query = `
+      [out:json][timeout:50];
+      area["name"="São Paulo"]["boundary"="administrative"]->.searchArea;
+      (
+        node["leisure"="park"](area.searchArea);
+        way["leisure"="park"](area.searchArea);
+        relation["leisure"="park"](area.searchArea);
+      );
+      out tags center;
+    `;
+    try {
+      const r = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: 'data=' + encodeURIComponent(query)
+      });
+      const data = await r.json();
+      if (!data?.elements?.length) throw new Error('Sem elementos');
+
+      parksLayer.clearLayers();
+      data.elements.forEach(el => {
+        const lat = el.lat || el.center?.lat;
+        const lon = el.lon || el.center?.lon;
+        if (!lat || !lon) return;
+
+        const nome = el.tags?.name || 'Parque (sem nome)';
+        const popupHtml = `
+          <b>${nome}</b><br>
+          <small class="text-muted">Fonte: OpenStreetMap</small><br>
+          <a target="_blank" href="https://www.openstreetmap.org/${el.type}/${el.id}">Ver no OSM</a> •
+          <a target="_blank" href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}">Abrir no Maps</a>
+        `;
+
+        L.circleMarker([lat, lon], {
+          radius: 6,
+          color: '#2e7d32',
+          fillColor: '#66bb6a',
+          fillOpacity: 0.8,
+          weight: 1
+        }).addTo(parksLayer).bindPopup(popupHtml);
+      });
+    } catch (e) {
+      console.warn('Overpass falhou, usando fallback de parques famosos.', e);
+
+      const fallbackParks = [
+        { nome: 'Parque Ibirapuera',        lat: -23.587416, lon: -46.657634 },
+        { nome: 'Parque Villa-Lobos',       lat: -23.545459, lon: -46.720909 },
+        { nome: 'Parque da Aclimação',      lat: -23.572330, lon: -46.624690 },
+        { nome: 'Parque Buenos Aires',      lat: -23.543930, lon: -46.660760 },
+        { nome: 'Parque do Povo',           lat: -23.588940, lon: -46.684830 },
+        { nome: 'Parque Trianon',           lat: -23.565500, lon: -46.652900 },
+        { nome: 'Parque da Água Branca',    lat: -23.526700, lon: -46.665600 },
+        { nome: 'Parque do Carmo',          lat: -23.569400, lon: -46.454500 },
+        { nome: 'Parque Ecológico do Tietê',lat: -23.494700, lon: -46.494300 },
+        { nome: 'Parque Independência',     lat: -23.583700, lon: -46.607700 },
+        { nome: 'Parque Linear Cantinho do Céu', lat: -23.778300, lon: -46.666600 },
+        { nome: 'Parque Burle Marx',        lat: -23.629600, lon: -46.709600 }
+      ];
+
+      parksLayer.clearLayers();
+      fallbackParks.forEach(p => {
+        L.circleMarker([p.lat, p.lon], {
+          radius: 6,
+          color: '#2e7d32',
+          fillColor: '#66bb6a',
+          fillOpacity: 0.8,
+          weight: 1
+        }).addTo(parksLayer)
+          .bindPopup(`<b>${p.nome}</b><br><small class="text-muted">Fallback</small>`);
+      });
+    }
+  }
+  loadSaoPauloParks();
+</script>
+{% endblock %}

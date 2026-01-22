@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Checklist - PETCIBER{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card p-4" style="border-radius:12px; background:#fdf6f0; box-shadow:0 4px 12px rgba(0,0,0,.06);">
+    <h4>📋 Checklist Essencial para Passeio</h4>
+
+    <form method="post" class="mb-3">
+      <!-- Seleção do Pet -->
+      <div class="mb-3">
+        <label for="pet_select" class="form-label">Selecione o pet:</label>
+        <select name="pet_id" id="pet_select" class="form-select" required>
+          {% for p in pets %}
+          <option value="{{ p.id }}" {% if pet.id == p.id %}selected{% endif %}>{{ p.nome }} — {{ p.raca }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Checkbox dos itens -->
+      <div class="row">
+        {% set checklist_itens = [
+          "Guia/Coleira",
+          "Água e potinho portátil",
+          "Saquinhos higiênicos",
+          "Lenços/Toalhinhas",
+          "Protetor de coxins (dias quentes)",
+          "Brinquedo pequeno",
+          "Petiscos (opcional)",
+          "Roupa ou capa (frio/chuva)",
+          "Vacinação em dia"
+        ] %}
+        {% for item in checklist_itens %}
+        <div class="col-12 col-sm-6 col-lg-4 mb-2">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="itens" id="item_{{ loop.index }}" value="{{ item }}"
+              {% if item in itens_selecionados %}checked{% endif %}>
+            <label class="form-check-label" for="item_{{ loop.index }}">{{ item }}</label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="btn btn-brown mt-3" style="background:#8b5a2b;color:#fff;">Gerar Checklist</button>
+    </form>
+
+    {% if itens_selecionados is not none %}
+    <hr>
+    <div>
+      <h5>✅ Checklist Atualizado</h5>
+      <ul>
+        {% for item in checklist_itens %}
+        <li>
+          {{ item }}:
+          {% if item in itens_selecionados %}
+            <span style="color:green;">✔</span>
+          {% else %}
+            <span style="color:red;">✖</span>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

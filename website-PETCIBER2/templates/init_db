@@ -1,0 +1,9 @@
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS pets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL,
+                    raca TEXT NOT NULL,
+                    dono_email TEXT NOT NULL,
+                    FOREIGN KEY (dono_email) REFERENCES usuarios(email)
+                )
+            ''')

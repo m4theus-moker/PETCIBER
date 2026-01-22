@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Agenda Inteligente - PETCIBER{% endblock %}
+
+{% block content %}
+<div class="container-box">
+  <h2 class="text-center mb-4 text-success">
+    <i class="fas fa-calendar-check"></i> Agenda Inteligente do Pet
+  </h2>
+
+  <!-- IMPORTANTE: enctype para upload -->
+  <form method="POST" class="row g-3 mb-4" enctype="multipart/form-data">
+    <div class="col-md-4">
+      <label class="form-label">Evento</label>
+      <input type="text" class="form-control" name="nome_evento"
+             placeholder="Ex: Vacina da Raiva" required>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Data</label>
+      <input type="date" class="form-control" name="data_evento" required>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" name="tipo" id="tipo" required>
+        <option value="vacina">Vacina</option>
+        <option value="banho">Banho</option>
+        <option value="tosa">Tosa</option>
+        <option value="checkup">Check-up</option>
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">Pet</label>
+      <select class="form-select" name="pet_id" required>
+        {% for pet in pets %}
+          <option value="{{ pet[0] }}">{{ pet[1] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Campo de carteirinha (aparece só quando tipo = vacina) -->
+    <div class="col-12" id="carteirinha-box" style="display:none">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">
+            Carteirinha de vacinação (PDF/JPG/PNG)
+          </label>
+          <input class="form-control" type="file" name="carteirinha"
+                 accept=".pdf,.jpg,.jpeg,.png">
+          <div class="form-text">
+            Opcional. Você pode anexar o arquivo ou preencher a URL ao lado.
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">URL da carteirinha (opcional)</label>
+          <input class="form-control" type="url" name="carteirinha_url"
+                 placeholder="https://exemplo.com/carteirinha.pdf">
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 text-end">
+      <button type="submit" class="btn btn-success">Adicionar Evento</button>
+    </div>
+  </form>
+
+  <h4 class="text-secondary">Próximos eventos</h4>
+  <ul class="list-group">
+    {% for evento in eventos %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ evento[0] }}</strong> ({{ evento[2] | title }}) para
+          <strong>{{ evento[3] }}</strong>
+          <br>
+          <small class="text-muted">Data: {{ evento[1] }}</small>
+
+          {# Se vier caminho ou URL da carteirinha, mostra link #}
+          {% if evento|length > 4 and (evento[4] or evento[5]) %}
+            <br>
+            <a class="text-decoration-none" target="_blank"
+               href="{{ evento[5] if evento[5] else (url_for('static', filename=evento[4]) if evento[4] else '#') }}">
+              <i class="fas fa-file-medical text-primary"></i>
+              <small> Carteirinha de vacinação</small>
+            </a>
+          {% endif %}
+        </div>
+        <i class="fas fa-bell text-warning"></i>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<!-- Mostrar/ocultar o campo de carteirinha quando tipo = vacina -->
+<script>
+  const tipo = document.getElementById('tipo');
+  const carteirinhaBox = document.getElementById('carteirinha-box');
+
+  function toggleCarteirinha() {
+    carteirinhaBox.style.display = (tipo.value === 'vacina') ? 'block' : 'none';
+  }
+  tipo.addEventListener('change', toggleCarteirinha);
+  // estado inicial do formulário
+  toggleCarteirinha();
+</script>
+
+<!-- Perto do título/botão Adicionar Evento -->
+<button id="btnNotificar" class="btn btn-outline-success" type="button" style="display:none;margin-left:8px;">
+  🔔 Ativar notificações
+</button>
+
+<script>
+(function(){
+  const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const btn = document.getElementById("btnNotificar");
+  if(!supported || !btn) return;
+
+  // mostra o botão se ainda não estiver concedido
+  if (Notification.permission !== "granted") btn.style.display = "inline-block";
+
+  function urlB64ToUint8Array(base64String){
+    const padding = "=".repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g,"+").replace(/_/g,"/");
+    const raw = atob(base64); const out = new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++) out[i]=raw.charCodeAt(i);
+    return out;
+  }
+
+  async function subscribe(){
+    const perm = await Notification.requestPermission();
+    if(perm !== "granted"){ alert("Notificações bloqueadas no navegador."); return; }
+
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    const r = await fetch("/push/vapid-public-key"); const j = await r.json();
+    if(!j.key){ alert("Chave VAPID pública não configurada."); return; }
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly:true,
+      applicationServerKey: urlB64ToUint8Array(j.key)
+    });
+
+    await fetch("/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sub)});
+    btn.style.display="none";
+    alert("Notificações ativadas! Você receberá lembretes da agenda.");
+  }
+
+  btn.addEventListener("click", subscribe);
+})();
+</script>
+
+{% endblock %}

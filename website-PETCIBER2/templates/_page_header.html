@@ -1,0 +1,8 @@
+{# templates/_page_header.html #}
+<div class="text-center mb-4">
+  <img src="{{ (brand.logo_url if brand is defined else url_for('static', filename='logo.png')) }}"
+       alt="Logo PETCIBER" class="rounded-circle shadow-sm"
+       style="display:block;margin:0 auto 6px;width:56px;height:56px;object-fit:contain;">
+  <h2 class="mt-2 text-success">{{ title }}</h2>
+  {% if subtitle %}<p class="text-muted">{{ subtitle }}</p>{% endif %}
+</div>

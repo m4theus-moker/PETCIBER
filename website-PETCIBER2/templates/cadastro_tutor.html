@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Cadastrar Tutor - PETCIBER{% endblock %}
+{% block content %}
+<div class="container" style="max-width:520px; background-color:#fff9f3; padding:30px; border-radius:15px; box-shadow:0 0 10px rgba(0,0,0,0.1); margin-top:60px;">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} text-center">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <h3 class="mb-3 text-center" style="color:#6b3e26;">Cadastro de Tutor</h3>
+
+  <form method="post" action="{{ url_for('cadastro_tutor') }}">
+    <div class="mb-3">
+      <label class="form-label" style="color:#6b3e26;">Nome completo</label>
+      <input name="nome" type="text" class="form-control" placeholder="Ex: Maria Silva" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" style="color:#6b3e26;">E-mail</label>
+      <input name="email" type="email" class="form-control" placeholder="seu@email.com" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" style="color:#6b3e26;">Senha</label>
+      <input name="senha" type="password" class="form-control" placeholder="Crie uma senha segura" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" style="color:#6b3e26;">Telefone (opcional)</label>
+      <input name="telefone" type="text" class="form-control" placeholder="(99) 99999-9999">
+    </div>
+
+    <button class="btn w-100" style="background-color:#2f855a; color:white; border-radius:8px;">Cadastrar</button>
+  </form>
+
+  <p class="text-center mt-3">
+    Já possui uma conta?<br>
+    <a href="{{ url_for('login') }}" style="color:#6b3e26; font-weight:500;">Fazer login</a>
+  </p>
+</div>
+{% endblock %}

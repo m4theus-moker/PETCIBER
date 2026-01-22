@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Criar conta — PETCIBER{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6 col-xl-5">
+    <div class="card p-4 p-md-5 shadow-sm">
+      <h3 class="mb-3 text-success"><i class="fa-solid fa-paw me-2"></i> Criar conta</h3>
+      <p class="text-muted mb-4">Leva menos de um minuto. Depois é só cadastrar seu pet!</p>
+
+      <form method="POST" action="{{ url_for('cadastro') }}" class="vstack gap-3">
+
+        <!-- Nome completo -->
+        <div>
+          <label class="form-label">Nome completo</label>
+          <input type="text" class="form-control" name="nome" placeholder="Ex: Ana Souza" required>
+        </div>
+
+        <!-- Telefone opcional -->
+        <div>
+          <label class="form-label">Telefone (opcional)</label>
+          <input type="text" class="form-control" name="telefone" placeholder="(99) 99999-9999">
+        </div>
+
+        <!-- E-mail -->
+        <div>
+          <label class="form-label">E-mail</label>
+          <input type="email" class="form-control" name="email" placeholder="voce@exemplo.com" required>
+        </div>
+
+        <!-- Senha e Confirmar senha lado a lado -->
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Senha</label>
+            <input type="password" class="form-control" name="senha" placeholder="••••••••" required>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Confirmar senha</label>
+            <input type="password" class="form-control" name="confirmar" placeholder="••••••••" required>
+          </div>
+        </div>
+
+        <!-- Botão de criar conta -->
+        <div class="d-grid">
+          <button type="submit" class="btn btn-success btn-pill">
+            <i class="fa-solid fa-user-plus me-1"></i> Criar conta
+          </button>
+        </div>
+      </form>
+
+      <hr class="my-4">
+      <div class="text-center">
+        <span class="text-muted">Já tem conta?</span>
+        <a class="ms-1" href="{{ url_for('login') }}">Entrar</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

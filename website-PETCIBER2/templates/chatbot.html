@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Chatbot - PETCIBER{% endblock %}
+
+{% block content %}
+<div class="container mt-5"
+     data-nome-tutor="{{ nome_tutor }}"
+     data-nome-pet="{{ nome_pet }}"
+     data-raca-pet="{{ raca_pet }}"
+     data-historico="{{ historico|e }}">
+  <div class="text-center mb-3">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo PETCIBER" width="120">
+    <h4 class="mt-2 text-success">Atendimento Virtual PETCIBER</h4>
+    <p class="text-muted">
+      Você está falando com o PETCIBOT. Como posso te ajudar hoje, <b>{{ nome_tutor }}</b>? 🐶
+      <br>
+      <small>Pet: <b>{{ nome_pet }}</b> — Raça: <b>{{ raca_pet }}</b></small>
+    </p>
+  </div>
+
+  <div class="card shadow p-3">
+    <div class="small text-muted mb-2">
+      Dicas: digite <code>/help</code> para ver comandos. Exemplos: <code>/status</code>, <code>/eventos</code>, <code>/checklist</code>, <code>/racao</code>, <code>/asfalto 28 sol</code>, <code>/radar</code>, <code>/agenda</code>, <code>/mapa</code>.
+    </div>
+
+    <div id="chat" class="mb-3"
+         style="height: 420px; overflow-y: auto; background-color: #f7f7f7; padding: 10px; border-radius: 12px;">
+      <!-- Mensagem inicial personalizada -->
+      <div class="msg-bot"><span>
+        Olá, {{ nome_tutor }}! 👋 Sou o PETCIBOT. Posso ajudar com vacinação, alimentação, banho, emergência ou passeios do(a) {{ nome_pet }} ({{ raca_pet }}).
+      </span></div>
+    </div>
+
+    <!-- Botões rápidos (comandos e temas) -->
+    <div id="botoes-opcao" class="mb-3 d-flex flex-wrap gap-2">
+      <!-- comandos do sistema -->
+      <button class="btn btn-outline-dark"     data-msg="/status">📊 Status do pet</button>
+      <button class="btn btn-outline-dark"     data-msg="/eventos">🗓️ Próximos eventos</button>
+      <button class="btn btn-outline-dark"     data-msg="/checklist">✅ Checklist</button>
+      <button class="btn btn-outline-dark"     data-msg="/racao">🍖 Ração ideal</button>
+      <button class="btn btn-outline-dark"     data-msg="/asfalto 28 sol">🌡️ Asfalto (ex.)</button>
+      <button class="btn btn-outline-dark"     data-msg="/radar">🗺️ Abrir Radar</button>
+      <button class="btn btn-outline-dark"     data-msg="/agenda">📅 Abrir Agenda</button>
+      <button class="btn btn-outline-dark"     data-msg="/mapa">🧭 Abrir Mapa</button>
+
+      <!-- temas de conversa -->
+      <button class="btn btn-outline-primary"  data-msg="Quais vacinas são necessárias para {{ raca_pet }}?">💉 Vacinação</button>
+      <button class="btn btn-outline-success"  data-msg="Como alimentar um(a) {{ raca_pet }}?">🍽️ Alimentação</button>
+      <button class="btn btn-outline-warning"  data-msg="Com que frequência dar banho no(a) {{ nome_pet }}?">🛁 Banho</button>
+      <button class="btn btn-outline-info"     data-msg="{{ nome_pet }} está com sintomas estranhos. O que faço?">🚨 Emergência</button>
+      <button class="btn btn-outline-secondary" data-msg="Dicas de passeio para {{ raca_pet }} e melhores horários.">🌳 Passeio</button>
+      {% set r = (raca_pet or '').lower() %}
+      {% if 'husky' in r %}
+        <button class="btn btn-outline-secondary" data-msg="Meu Husky sente muito calor. Alguma recomendação de cuidado e hidratação?">❄️ Calor em Husky</button>
+      {% elif 'pug' in r or 'bulldog' in r %}
+        <button class="btn btn-outline-secondary" data-msg="Raças braquicefálicas têm dificuldades respiratórias. Quais cuidados no calor e em passeios?">🫁 Cuidados no calor</button>
+      {% elif 'labrador' in r %}
+        <button class="btn btn-outline-secondary" data-msg="Quantos passeios e exercício diário recomenda para Labrador?">🏃 Exercício diário</button>
+      {% endif %}
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="mensagem" class="form-control" placeholder="Digite sua dúvida ou /comando..."
+             autocomplete="off" maxlength="800"
+             onkeypress="if(event.key === 'Enter') enviarMensagem()">
+      <button class="btn btn-success" onclick="enviarMensagem()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Estilo do chat -->
+<style>
+  #chat div { margin-bottom: 12px; }
+  .msg-user { text-align: right; }
+  .msg-user span {
+    background-color: #dcf8c6;
+    padding: 10px 14px;
+    border-radius: 15px 15px 0 15px;
+    display: inline-block;
+    max-width: 80%;
+    white-space: pre-wrap;
+  }
+  .msg-bot { text-align: left; position: relative; }
+  .msg-bot span {
+    background-color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 15px 15px 15px 0;
+    display: inline-block;
+    max-width: 80%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    white-space: pre-wrap;
+  }
+  .typing { font-style: italic; color: gray; font-size: 0.9rem; }
+  .audio-button {
+    position: absolute; right: -35px; top: 0;
+    background: none; border: none; cursor: pointer; color: #28a745;
+  }
+</style>
+
+<!-- Lógica do chatbot -->
+<script>
+  function sanitize(str) {
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+  function scrollDown() {
+    const chat = document.getElementById('chat');
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // Botões rápidos
+  document.getElementById('botoes-opcao').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-msg]');
+    if (!btn) return;
+    document.getElementById('mensagem').value = btn.getAttribute('data-msg');
+    enviarMensagem();
+  });
+
+  // Slash commands que abrem páginas localmente (sem ir ao servidor)
+  function comandosCliente(texto) {
+    const t = texto.trim().toLowerCase();
+    if (t === '/help') {
+      return "Comandos: /status, /eventos, /checklist, /racao, /asfalto <temp-ar> [sol|sombra], /radar, /agenda, /mapa. Ex.: /asfalto 28 sol";
+    }
+    if (t === '/radar')  { window.open('{{ url_for("radar") }}',  '_blank'); return "Abrindo o Radar de Passeio…"; }
+    if (t === '/agenda') { window.open('{{ url_for("agenda") }}', '_blank'); return "Abrindo sua Agenda…"; }
+    if (t === '/mapa')   { window.open('{{ url_for("mapa") }}',   '_blank'); return "Abrindo o Mapa…"; }
+    return null; // outros comandos serão processados no servidor
+  }
+
+  let emAndamento = false;
+  async function enviarMensagem() {
+    if (emAndamento) return;
+    const input = document.getElementById('mensagem');
+    const texto = input.value.trim();
+    if (!texto) return;
+
+    emAndamento = true;
+    const chat = document.getElementById('chat');
+
+    // sua mensagem
+    chat.innerHTML += `<div class="msg-user"><span>${sanitize(texto)}</span></div>`;
+    input.value = '';
+    scrollDown();
+
+    // comandos locais?
+    const respostaLocal = comandosCliente(texto);
+    if (respostaLocal) {
+      simularDigitacao(respostaLocal);
+      emAndamento = false;
+      return;
+    }
+
+    // "digitando..."
+    const typingId = 'typing-' + Date.now();
+    chat.innerHTML += `<div id="${typingId}" class="msg-bot"><span class="typing">Digitando...</span></div>`;
+    scrollDown();
+
+    try {
+      const resp = await fetch('{{ url_for("chatbot") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ mensagem: texto })
+      });
+      const data = await resp.json();
+      document.getElementById(typingId)?.remove();
+      simularDigitacao(data?.resposta || 'Desculpe, não consegui responder agora. Tente novamente.');
+    } catch (err) {
+      document.getElementById(typingId)?.remove();
+      simularDigitacao('Ops! Tive um problema de conexão. Tente novamente em instantes.');
+    } finally {
+      emAndamento = false;
+    }
+  }
+
+  function simularDigitacao(textoCompleto) {
+    const chat = document.getElementById('chat');
+    const msgContainer = document.createElement('div');
+    msgContainer.className = 'msg-bot';
+
+    const span = document.createElement('span');
+    const audioBtn = document.createElement('button');
+    audioBtn.className = 'audio-button';
+    audioBtn.innerHTML = '🔊';
+    audioBtn.title = 'Ouvir resposta';
+    audioBtn.onclick = () => falarTexto(textoCompleto);
+
+    msgContainer.appendChild(span);
+    msgContainer.appendChild(audioBtn);
+    chat.appendChild(msgContainer);
+
+    const safeText = String(textoCompleto || '');
+    let i = 0;
+    (function type() {
+      if (i < safeText.length) {
+        span.textContent += safeText[i++];
+        scrollDown();
+        setTimeout(type, 12);
+      }
+    })();
+  }
+
+  function falarTexto(texto) {
+    if (!('speechSynthesis' in window)) {
+      alert('Seu navegador não suporta leitura de voz.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const fala = new SpeechSynthesisUtterance(texto);
+    fala.lang = 'pt-BR';
+    fala.rate = 1;
+    window.speechSynthesis.speak(fala);
+  }
+</script>
+{% endblock %}

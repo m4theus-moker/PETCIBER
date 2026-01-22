@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+  <script>
+    const socket = io('http://localhost:5000');
+    socket.on('connect', () => {
+      console.log('Conectado ao servidor SocketIO');
+      socket.send(JSON.stringify({bpm: 120}));
+    });
+    socket.on('dados_bpm', data => {
+      console.log('dados_bpm recebido:', data);
+    });
+  </script>
+</body>
+</html>

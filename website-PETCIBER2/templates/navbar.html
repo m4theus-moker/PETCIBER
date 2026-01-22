@@ -1,0 +1,36 @@
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #6d4c41;">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">🐾 PETCIBER</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      {% if session['usuario'] %}
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('checklist') }}">Checklist</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('cadastrar_pet') }}">Cadastrar Pet</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-warning" href="{{ url_for('logout') }}">Sair</a>
+        </li>
+        <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('agenda') }}">
+        <i class="fas fa-calendar-alt"></i> Agenda
+    </a>
+</li>
+<li class="nav-item"><a class="nav-link" href="{{ url_for('radar') }}">Radar</a>
+</li>
+<li class="nav-item"><a class="nav-link" href="{{ url_for('chatbot') }}">Chatbot</a>
+</li>
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</nav>
